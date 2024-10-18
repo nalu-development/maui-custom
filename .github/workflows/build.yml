@@ -1,0 +1,69 @@
+name: Build
+
+on:
+    push:
+        branches:
+            - custom-net8
+    pull_request:
+    workflow_dispatch:
+
+env:
+    # Disable the .NET logo in the console output.
+    DOTNET_NOLOGO: true
+    # Disable the .NET first time experience to skip caching NuGet packages and speed up the build.
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+    # Disable sending .NET CLI telemetry to Microsoft.
+    DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+    build:
+        name: Build-${{matrix.os}}
+        runs-on: ${{matrix.os}}
+        strategy:
+            matrix:
+                os: [macos-14]
+        steps:
+            - name: "Checkout"
+              uses: actions/checkout@v4
+              with:
+                  lfs: true
+                  fetch-depth: 0
+            - name: "Patch Configurations"
+              run: |
+                  sed -i '' 's@NUGET_ONLY_PLACEHOLDER@https://api.nuget.org/v3/index.json@g' NuGet.config
+                  echo "sdk.dir=/Users/runner/Library/Android/sdk" > ./src/Core/AndroidNative/local.properties
+            - name: "Dotnet Tool Restore"
+              run: dotnet tool restore
+            - name: "Install workloads"
+              run: |
+                  dotnet workload install ios android
+            - name: "Dotnet Cake Pack"
+              run: |
+                  export JAVA_HOME=$(/usr/libexec/java_home -v 17.0.12)
+                  dotnet cake --target=dotnet-pack --android --ios --configuration=Release --usenuget=false --workloads=system --packageVersion=8.0.99-${{ github.head_ref || github.ref_name }} --officialBuildId=${{github.run_number}}
+            - name: "Publish Artifacts"
+              uses: actions/upload-artifact@v4.4.3
+              with:
+                  name: ${{matrix.os}}
+                  path: "./artifacts/packages/Release/Shipping"
+    
+    push-github-packages:
+        name: "Push GitHub Packages"
+        needs: build
+        environment:
+            name: "GitHub Packages"
+            url: https://github.com/nalu-development/maui-custom/packages
+        permissions:
+            packages: write
+        runs-on: windows-latest
+        steps:
+            - name: "Download Artifacts"
+              uses: actions/download-artifact@v4.1.8
+              with:
+                  name: "macos-14"
+            - name: "Dotnet NuGet Add Source"
+              run: dotnet nuget add source https://nuget.pkg.github.com/nalu-development/index.json --name GitHub --username albyrock87 --password ${{secrets.GITHUB_TOKEN}}
+              shell: pwsh
+            - name: "Dotnet NuGet Push"
+              run: dotnet nuget push .\*.nupkg --api-key ${{ github.token }} --source GitHub --skip-duplicate
+              shell: pwsh
