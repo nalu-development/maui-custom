@@ -147,7 +147,7 @@ namespace Microsoft.Maui.Controls
 
 		void IPaddingElement.OnPaddingPropertyChanged(Thickness oldValue, Thickness newValue)
 		{
-			UpdateChildrenLayout();
+			(this as IView).InvalidateMeasure();
 		}
 
 		/// <summary>
@@ -496,11 +496,16 @@ namespace Microsoft.Maui.Controls
 			if (TitleView != null)
 				SetInheritedBindingContext(TitleView, BindingContext);
 		}
-		
-		internal override void OnChildMeasureInvalidatedInternal(VisualElement child, InvalidationTrigger trigger)
+
+		internal override void OnChildMeasureInvalidated(VisualElement child, InvalidationTrigger trigger)
 		{
+#pragma warning disable CS0618 // Type or member is obsolete
 			// TODO: once we remove old Xamarin public signatures we can invoke `OnChildMeasureInvalidated(VisualElement, InvalidationTrigger)` directly
 			OnChildMeasureInvalidated(child, new InvalidationEventArgs(trigger));
+#pragma warning restore CS0618 // Type or member is obsolete
+
+			var propagatedTrigger = GetPropagatedTrigger(trigger);
+			InvokeMeasureInvalidated(propagatedTrigger);
 		}
 
 		/// <summary>
@@ -510,8 +515,6 @@ namespace Microsoft.Maui.Controls
 		/// <param name="e">The event arguments.</param>
 		protected virtual void OnChildMeasureInvalidated(object sender, EventArgs e)
 		{
-			InvalidationTrigger trigger = (e as InvalidationEventArgs)?.Trigger ?? InvalidationTrigger.Undefined;
-			OnChildMeasureInvalidated((VisualElement)sender, trigger);
 		}
 
 		/// <summary>
@@ -543,7 +546,11 @@ namespace Microsoft.Maui.Controls
 		protected override void OnSizeAllocated(double width, double height)
 		{
 			base.OnSizeAllocated(width, height);
-			UpdateChildrenLayout();
+
+			if (Handler is null)
+			{
+				UpdateChildrenLayout();
+			}
 		}
 
 		/// <summary>
@@ -581,29 +588,6 @@ namespace Microsoft.Maui.Controls
 					}
 				}
 			}
-		}
-
-		internal virtual void OnChildMeasureInvalidated(VisualElement child, InvalidationTrigger trigger)
-		{
-			var container = this as IPageContainer<Page>;
-			if (container != null)
-			{
-				Page page = container.CurrentPage;
-				if (page != null && page.IsVisible && (!page.IsPlatformEnabled || !page.IsPlatformStateConsistent))
-					return;
-			}
-			else
-			{
-				var logicalChildren = this.InternalChildren;
-				for (var i = 0; i < logicalChildren.Count; i++)
-				{
-					var v = logicalChildren[i] as VisualElement;
-					if (v != null && v.IsVisible && (!v.IsPlatformEnabled || !v.IsPlatformStateConsistent))
-						return;
-				}
-			}
-
-			InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
 		}
 
 		internal void OnAppearing(Action action)

@@ -73,6 +73,13 @@ namespace Microsoft.Maui.Controls.Compatibility
 			}
 		}
 
+		internal override void OnChildMeasureInvalidated(VisualElement child, InvalidationTrigger trigger)
+		{
+			_layoutInformation = new LayoutInformation();
+			base.OnChildMeasureInvalidated(child, trigger);
+		}
+
+#pragma warning disable CS0672 // Member overrides obsolete member
 		protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
 			if (!HasVisibleChildren())
@@ -90,12 +97,6 @@ namespace Microsoft.Maui.Controls.Compatibility
 		internal override void ComputeConstraintForView(View view)
 		{
 			ComputeConstraintForView(view, false);
-		}
-
-		internal override void InvalidateMeasureInternal(InvalidationTrigger trigger)
-		{
-			_layoutInformation = new LayoutInformation();
-			base.InvalidateMeasureInternal(trigger);
 		}
 
 		void AlignOffAxis(LayoutInformation layout, StackOrientation orientation, double widthConstraint, double heightConstraint)
