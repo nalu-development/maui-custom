@@ -294,7 +294,6 @@ namespace Microsoft.Maui.Platform
 				platformView.SetNeedsLayout();
 			}
 
-			platformView.SetNeedsLayout();
 			platformView.InvalidateAncestorsMeasures();
 		}
 
