@@ -12,16 +12,19 @@ namespace Microsoft.Maui.Platform
 	public partial class WrapperView : UIView, IDisposable, IUIViewLifeCycleEvents, IMauiPlatformView
 	{
 		bool _invalidateParentWhenMovedToWindow;
-		WeakReference<ICrossPlatformLayout>? _crossPlatformLayoutReference;
+		WeakReference<IViewHandler>? _viewHandlerReference;
 
-		internal ICrossPlatformLayout? CrossPlatformLayout
+		internal IViewHandler? ViewHandler
 		{
-			get => _crossPlatformLayoutReference != null && _crossPlatformLayoutReference.TryGetTarget(out var v) ? v : null;
-			set => _crossPlatformLayoutReference = value == null ? null : new WeakReference<ICrossPlatformLayout>(value);
+			get => _viewHandlerReference != null && _viewHandlerReference.TryGetTarget(out var v) ? v : throw new InvalidOperationException("ViewHandler is null");
+			set => _viewHandlerReference = value == null ? null : new WeakReference<IViewHandler>(value);
 		}
+
+		ICrossPlatformLayout? CrossPlatformLayout => ViewHandler?.VirtualView as ICrossPlatformLayout;
 
 		double _lastMeasureHeight = double.NaN;
 		double _lastMeasureWidth = double.NaN;
+		CGSize _lastSizeThatFits;
 
 		CAShapeLayer? _maskLayer;
 		CAShapeLayer? _backgroundMaskLayer;
@@ -135,13 +138,13 @@ namespace Microsoft.Maui.Platform
 			SetShadow();
 			SetBorder();
 
-			var boundWidth = Bounds.Width;
-			var boundHeight = Bounds.Height;
+			double boundWidth = Bounds.Width;
+			double boundHeight = Bounds.Height;
 
 			if (!IsMeasureValid(boundWidth, boundHeight))
 			{
-				CrossPlatformLayout?.CrossPlatformMeasure(boundWidth, boundHeight);
 				CacheMeasureConstraints(boundWidth, boundHeight);
+				_lastSizeThatFits = GetSizeThatFits(Bounds.Size);
 			}
 
 			CrossPlatformLayout?.CrossPlatformArrange(Bounds.ToRectangle());
@@ -165,29 +168,51 @@ namespace Microsoft.Maui.Platform
 
 		public override CGSize SizeThatFits(CGSize size)
 		{
-			var subviews = Subviews;
-			CGSize returnSize;
+			double widthConstraint = size.Width;
+			double heightConstraint = size.Height;
 
+			if (IsMeasureValid(widthConstraint, heightConstraint))
+			{
+				return _lastSizeThatFits;
+			}
+
+			var returnSize = GetSizeThatFits(size);
+
+			// SizeThatFits might be invoked when the view is still off-screen, so caching the constraints is avoided here.
+			// Constraints should not be cached when the view is measured off-screen, as they may differ when the view is on-screen (e.g., in a Label).
+			if (Window is not null)
+			{
+				CacheMeasureConstraints(widthConstraint, heightConstraint);
+				_lastSizeThatFits = returnSize;
+			}
+
+			return returnSize;
+		}
+
+		CGSize GetSizeThatFits(CGSize size)
+		{
+			var subviews = Subviews;
+			
+			CGSize returnSize;
 			if (subviews.Length == 0)
 			{
 				returnSize = base.SizeThatFits(size);
 			}
-
 			else
 			{
 				var child = subviews[0];
 
+				if (CrossPlatformLayout is { } crossPlatformLayout)
+				{
+					returnSize = CrossPlatformMeasure(size, crossPlatformLayout);
+				}
 				// Calling SizeThatFits on an ImageView always returns the image's dimensions, so we need to call the extension method
 				// This also affects ImageButtons
-				if (child is UIImageView imageView)
+				else if (child is UIImageView imageView)
 				{
 					returnSize = imageView.SizeThatFitsImage(size);
 				}
-				else if (CrossPlatformLayout is not null)
-				{
-					returnSize = CrossPlatformLayout.CrossPlatformMeasure(size.Width, size.Height).ToCGSize();
-				}
-				else if (child is UIButton imageButton && imageButton.ImageView?.Image is not null && imageButton.CurrentTitle is null)
+				else if (child is UIButton { ImageView.Image: not null, CurrentTitle: null } imageButton)
 				{
 					returnSize = imageButton.ImageView.SizeThatFitsImage(size);
 				}
@@ -197,50 +222,21 @@ namespace Microsoft.Maui.Platform
 				}
 			}
 
-			CacheMeasureConstraints(size.Width, size.Height);
 			return returnSize;
 		}
 
-		internal CGSize SizeThatFitsWrapper(CGSize originalSpec, double virtualViewWidth, double virtualViewHeight, IView view)
+		static CGSize CrossPlatformMeasure(CGSize size, ICrossPlatformLayout crossPlatformLayout)
 		{
-			var subviews = Subviews;
-			CGSize returnSize;
-			var widthConstraint = IsExplicitSet(virtualViewWidth) ? virtualViewWidth : originalSpec.Width;
-			var heightConstraint = IsExplicitSet(virtualViewHeight) ? virtualViewHeight : originalSpec.Height;
+			double widthConstraint = size.Width;
+			double heightConstraint = size.Height;
 
-			if (subviews.Length == 0)
+			if (crossPlatformLayout is IView view)
 			{
-				returnSize = base.SizeThatFits(originalSpec);
+				widthConstraint = IsExplicitSet(view.Width) ? view.Width : widthConstraint;
+				heightConstraint = IsExplicitSet(view.Height) ? view.Height : heightConstraint;
 			}
 
-			else
-			{
-				var child = subviews[0];
-
-				if (child is UIImageView || (child is UIButton imageButton && imageButton.ImageView?.Image is not null && imageButton.CurrentTitle is null))
-				{
-					if(CrossPlatformLayout is not null)
-					{
-						returnSize = CrossPlatformLayout.CrossPlatformMeasure(widthConstraint, heightConstraint);
-					}
-					else
-					{
-						returnSize = SizeThatFits(new CGSize(widthConstraint, heightConstraint));
-					}
-				}
-
-				else if (CrossPlatformLayout is not null)
-				{
-					returnSize = CrossPlatformLayout.CrossPlatformMeasure(widthConstraint, heightConstraint);
-				}
-				else
-				{
-					returnSize = SizeThatFits(originalSpec);
-				}
-			}
-
-			CacheMeasureConstraints(widthConstraint, heightConstraint);
-			return returnSize;
+			return crossPlatformLayout.CrossPlatformMeasure(widthConstraint, heightConstraint).ToCGSize();
 		}
 
 		partial void ClipChanged()

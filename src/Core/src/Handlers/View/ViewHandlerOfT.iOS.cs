@@ -30,6 +30,7 @@ namespace Microsoft.Maui.Handlers
 			PlatformView.RemoveFromSuperview();
 
 			ContainerView ??= new WrapperView(PlatformView.Bounds);
+			ContainerView.ViewHandler = this;
 			ContainerView.AddSubview(PlatformView);
 
 			if (oldIndex is int idx && idx >= 0)
@@ -62,6 +63,7 @@ namespace Microsoft.Maui.Handlers
 			{
 				if (containerView is WrapperView wrapperView)
 				{
+					wrapperView.ViewHandler = null;
 					wrapperView.RemoveFromSuperview();
 					wrapperView.Disconnect();
 				}

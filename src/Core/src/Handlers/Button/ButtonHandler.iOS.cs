@@ -28,10 +28,6 @@ namespace Microsoft.Maui.Handlers
 		protected override void SetupContainer()
 		{
 			base.SetupContainer();
-			if (ContainerView is WrapperView wrapperView)
-			{
-				wrapperView.CrossPlatformLayout = VirtualView as ICrossPlatformLayout;
-			}
 		}
 
 		protected override void ConnectHandler(UIButton platformView)

@@ -14,6 +14,7 @@ namespace Microsoft.Maui.Platform
 
 		double _lastMeasureHeight = double.NaN;
 		double _lastMeasureWidth = double.NaN;
+		CGSize _lastSizeThatFits;
 
 		WeakReference<IView>? _reference;
 		WeakReference<ICrossPlatformLayout>? _crossPlatformLayoutReference;
@@ -99,11 +100,16 @@ namespace Microsoft.Maui.Platform
 			var widthConstraint = size.Width;
 			var heightConstraint = size.Height;
 
+			if (IsMeasureValid(widthConstraint, heightConstraint))
+			{
+				return _lastSizeThatFits;
+			}
+
 			var crossPlatformSize = CrossPlatformMeasure(widthConstraint, heightConstraint);
 
 			CacheMeasureConstraints(widthConstraint, heightConstraint);
 
-			return crossPlatformSize.ToCGSize();
+			return _lastSizeThatFits = crossPlatformSize.ToCGSize();
 		}
 
 		// TODO: Possibly reconcile this code with ViewHandlerExtensions.LayoutVirtualView
@@ -130,8 +136,9 @@ namespace Microsoft.Maui.Platform
 
 			if (!IsMeasureValid(widthConstraint, heightConstraint) && Superview is not MauiView)
 			{
-				CrossPlatformMeasure(widthConstraint, heightConstraint);
+				var crossPlatformSize = CrossPlatformMeasure(widthConstraint, heightConstraint);
 				CacheMeasureConstraints(widthConstraint, heightConstraint);
+				_lastSizeThatFits = crossPlatformSize.ToCGSize();
 			}
 
 			CrossPlatformArrange(bounds);

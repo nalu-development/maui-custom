@@ -142,6 +142,10 @@ namespace Microsoft.Maui.DeviceTests
 
 				label.HeightRequest = 300;
 
+				// Propagation doesn't happen automatically when the view is not moved to window
+				// So we need to simulate the propagation here (see InvalidateAncestorsMeasures() method)
+				handler.PlatformView.SetNeedsLayout();
+
 				var targetSize = handler.VirtualView.Measure(double.PositiveInfinity, double.PositiveInfinity);
 				handler.VirtualView.Arrange(new Rect(Point.Zero, targetSize));
 
