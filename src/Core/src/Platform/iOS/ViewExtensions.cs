@@ -313,13 +313,13 @@ namespace Microsoft.Maui.Platform
 
 				var superview = child.Superview;
 
-				// We're only interested in invalidating the parent if it's a MAUI layout or a parent of a MAUI layout
+				// Now invalidate the parent view
 				var superviewMauiPlatformLayout = superview as IMauiPlatformView;
 				if (superviewMauiPlatformLayout is not null)
 				{
 					superviewMauiPlatformLayout.InvalidateMeasure(isPropagating: true);
 				}
-				else if (childMauiPlatformLayout is not null)
+				else
 				{
 					superview.SetNeedsLayout();
 				}
@@ -329,6 +329,7 @@ namespace Microsoft.Maui.Platform
 				if (superview is null or PageView or UIScrollView)
 				{
 					// We reached the root view or a scrollable area (includes collection view), stop propagating
+					// The view will eventually watch its content size and invoke InvalidateMeasure when needed
 					return;
 				}
 

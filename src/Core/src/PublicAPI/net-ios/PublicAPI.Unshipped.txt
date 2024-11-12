@@ -8,3 +8,4 @@ Microsoft.Maui.Platform.IAutoSizableCALayer.AutoSizeToSuperLayer() -> void
 Microsoft.Maui.Platform.MauiCALayer.AutoSizeToSuperLayer() -> void
 override Microsoft.Maui.Platform.MauiCALayer.Dispose(bool disposing) -> void
 override Microsoft.Maui.Platform.MauiCALayer.RemoveFromSuperLayer() -> void
+override Microsoft.Maui.Platform.MauiScrollView.Dispose(bool disposing) -> void

@@ -9,11 +9,8 @@ namespace Microsoft.Maui.Platform
 {
 	public class MauiScrollView : UIScrollView, IUIViewLifeCycleEvents, IMauiPlatformView
 	{
-#pragma warning disable MEM0002
-		// Justification: this is a self-reference so it won't cause a memory leak
-		// Having this as a field prevents the observer from being GC'd
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "This is a self-reference so it won't cause a memory leak")]
 		IDisposable? _contentSizeObserver;
-#pragma warning restore MEM0002
 
 		bool _invalidateParentWhenMovedToWindow;
 		CGSize _lastContentSize;
@@ -29,6 +26,17 @@ namespace Microsoft.Maui.Platform
 		public MauiScrollView()
 		{
 			_contentSizeObserver = AddObserver("contentSize", NSKeyValueObservingOptions.New, ContentSizeChanged);
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				_contentSizeObserver?.Dispose();
+				_contentSizeObserver = null;
+			}
+
+			base.Dispose(disposing);
 		}
 
 		void ContentSizeChanged(NSObservedChange obj)
