@@ -8,10 +8,26 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class ImageHandler : ViewHandler<IImage, ImageView>
 	{
+		class MauiImageView : AppCompatImageView
+		{
+			public MauiImageView(global::Android.Content.Context context) : base(context)
+			{
+			}
+
+			protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
+			{
+				base.OnMeasure(widthMeasureSpec, heightMeasureSpec);
+			}
+
+			protected override void OnLayout(bool changed, int left, int top, int right, int bottom)
+			{
+				base.OnLayout(changed, left, top, right, bottom);
+			}
+		}
 		
 		protected override ImageView CreatePlatformView()
 		{
-			var imageView = new AppCompatImageView(Context);
+			var imageView = new MauiImageView(Context);
 
 			// Enable view bounds adjustment on measure.
 			// This allows the ImageView's OnMeasure method to account for the image's intrinsic
