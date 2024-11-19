@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,10 +13,10 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 
 import com.microsoft.maui.ImageLoaderCallback;
+import com.microsoft.maui.PlatformLogger;
 
 public class MauiCustomTarget extends CustomTarget<Drawable> {
-    private static final String TAG = "MauiCustomTarget";
-    private static final boolean IS_VERBOSE_LOGGABLE = Log.isLoggable(TAG, Log.VERBOSE);
+    private static final PlatformLogger logger = new PlatformLogger("MauiCustomTarget");
 
     private final Context context;
     private final ImageLoaderCallback callback;
@@ -29,7 +28,7 @@ public class MauiCustomTarget extends CustomTarget<Drawable> {
         this.context = context;
         this.callback = callback;
 
-        if (IS_VERBOSE_LOGGABLE && model != null) {
+        if (logger.isVerboseLoggable && model != null) {
             this.resourceLogIdentifier = model.toString();
         } else {
             this.resourceLogIdentifier = null;
@@ -43,9 +42,8 @@ public class MauiCustomTarget extends CustomTarget<Drawable> {
 
         this.completed = true;
 
-        if (IS_VERBOSE_LOGGABLE) Log.v(TAG, "onLoadFailed: " + resourceLogIdentifier);
+        if (logger.isVerboseLoggable) logger.v("onLoadFailed: " + resourceLogIdentifier);
 
-        // trigger the callback out of this target
         callback.onComplete(false, errorDrawable, null);
     }
 
@@ -55,15 +53,14 @@ public class MauiCustomTarget extends CustomTarget<Drawable> {
             return;
         this.completed = true;
 
-        if (IS_VERBOSE_LOGGABLE) Log.v(TAG, "onResourceReady: " + resourceLogIdentifier);
+        if (logger.isVerboseLoggable) logger.v("onResourceReady: " + resourceLogIdentifier);
 
-        // trigger the callback out of this target
         callback.onComplete(true, resource, this::clear);
     }
 
     @Override
     public void onLoadCleared(@Nullable Drawable placeholder) {
-        if (IS_VERBOSE_LOGGABLE) Log.v(TAG, "onLoadCleared: " + resourceLogIdentifier);
+        if (logger.isVerboseLoggable) logger.v("onLoadCleared: " + resourceLogIdentifier);
     }
 
     private void post(Runnable runnable) {
@@ -78,6 +75,8 @@ public class MauiCustomTarget extends CustomTarget<Drawable> {
     }
 
     private void clear() {
+        // TODO: it looks like no one is really disposing the result on C# side
+        // we must fix it there to release the Glide cache entry properly
         post(() -> {
             Glide
                 .with(context)
