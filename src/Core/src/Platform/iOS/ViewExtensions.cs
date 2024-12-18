@@ -312,6 +312,10 @@ namespace Microsoft.Maui.Platform
 				}
 
 				var superview = child.Superview;
+				if (superview is null)
+				{
+					return;
+				}
 
 				// Now invalidate the parent view
 				var superviewMauiPlatformLayout = superview as IMauiPlatformView;
@@ -326,7 +330,7 @@ namespace Microsoft.Maui.Platform
 
 				// Potential improvement: if the MAUI view (superview here) is constrained to a fixed size, we could stop propagating
 				// when doing this, we must pay attention to a scenario where a non-fixed-size view becomes fixed-size
-				if (superview is null or PageView or UIScrollView)
+				if (superview is PageView or UIScrollView)
 				{
 					// We reached the root view or a scrollable area (includes collection view), stop propagating
 					// The view will eventually watch its content size and invoke InvalidateMeasure when needed
