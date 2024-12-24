@@ -1,2 +1,12 @@
 #nullable enable
 override Microsoft.Maui.Handlers.BorderHandler.PlatformArrange(Microsoft.Maui.Graphics.Rect rect) -> void
+Microsoft.Maui.PlatformWrapperView.UpdateShadow(int paintType, float radius, float offsetX, float offsetY, int[]? colors, float[]? positions, float[]? bounds) -> void
+override Microsoft.Maui.PlatformWrapperView.OnLayout(bool changed, int left, int top, int right, int bottom) -> void
+*REMOVED*override Microsoft.Maui.Platform.WrapperView.OnDetachedFromWindow() -> void
+*REMOVED*override Microsoft.Maui.Platform.WrapperView.RequestLayout() -> void
+virtual Microsoft.Maui.PlatformContentViewGroup.SetHasClip(bool hasClip) -> void
+*REMOVED*Microsoft.Maui.PlatformContentViewGroup.SetHasClip(bool hasClip) -> void
+virtual Microsoft.Maui.PlatformWrapperView.DrawShadow(Android.Graphics.Canvas! canvas, int viewWidth, int viewHeight) -> void
+virtual Microsoft.Maui.PlatformWrapperView.InvalidateShadow() -> void
+*REMOVED*~override Microsoft.Maui.Platform.WrapperView.DrawShadow(Android.Graphics.Canvas canvas, int viewWidth, int viewHeight) -> void
+*REMOVED*abstract Microsoft.Maui.PlatformWrapperView.DrawShadow(Android.Graphics.Canvas! p0, int p1, int p2) -> void
