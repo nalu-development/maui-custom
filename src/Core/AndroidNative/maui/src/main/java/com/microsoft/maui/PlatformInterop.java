@@ -492,8 +492,6 @@ public class PlatformInterop {
      */
     public static void drawMauiDrawablePath(PaintDrawable drawable, Canvas canvas, int width, int height, @NonNull Path clipPath, Paint borderPaint)
     {
-        int saveCount = canvas.saveLayer(0, 0, width, height, null);
-
         Paint paint = drawable.getPaint();
         if (paint != null) {
             canvas.drawPath(clipPath, paint);
@@ -501,8 +499,6 @@ public class PlatformInterop {
         if (borderPaint != null) {
             canvas.drawPath(clipPath, borderPaint);
         }
-
-        canvas.restoreToCount(saveCount);
     }
 
     /**

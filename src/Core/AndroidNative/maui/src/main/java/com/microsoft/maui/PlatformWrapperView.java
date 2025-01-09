@@ -7,6 +7,7 @@ import android.os.Build;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Color;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -19,6 +20,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 
 import com.microsoft.maui.PlatformPaintType;
+import com.microsoft.maui.PlatformShadowDrawable;
 import com.microsoft.maui.glide.ShadowBitmapPool;
 
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
@@ -41,8 +43,7 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
     private Bitmap shadowBitmap;
     private Canvas shadowCanvas;
     private boolean shadowInvalidated = true;
-    private int lastWidth = 0;
-    private int lastHeight = 0;
+    private boolean hasClip = false;
 
     private int paintType = PlatformPaintType.NONE;
     private float offsetX = 0;
@@ -55,6 +56,7 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
     @Override
     protected void setHasClip(boolean hasClip) {
         super.setHasClip(hasClip);
+        this.hasClip = hasClip;
         shadowInvalidated = true;
     }
 
@@ -85,11 +87,12 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
             shadowPaint.setAntiAlias(true);
             shadowPaint.setDither(true);
             shadowPaint.setFilterBitmap(true);
+            shadowPaint.setStyle(Paint.Style.FILL_AND_STROKE);
 
             if (radius > 0) {
                 shadowPaint.setMaskFilter(new BlurMaskFilter(radius, BlurMaskFilter.Blur.NORMAL));
             }
-            
+
             if (paintType == PlatformPaintType.SOLID) {
                 shadowPaint.setColor(colors.length > 0 ? colors[0] : android.graphics.Color.BLACK);
             }
@@ -111,21 +114,19 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        int width = right - left;
-        int height = bottom - top;
-
-        if (width != lastWidth || height != lastHeight) {
-            lastWidth = width;
-            lastHeight = height;
-            shadowInvalidated = true;
-        }
+        shadowInvalidated = true;
     }
 
-    public void invalidateShadow() {
-        if (paintType != PlatformPaintType.NONE) {
-            shadowInvalidated = true;
-            invalidate();
-        }
+    @Override
+    public void requestLayout() {
+        super.requestLayout();
+        shadowInvalidated = true;
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        shadowInvalidated = true;
     }
 
     @Override
@@ -143,7 +144,6 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        // Only call into C# if there is a Shadow
         if (paintType != PlatformPaintType.NONE) {
             int viewWidth = viewBounds.width();
             int viewHeight = viewBounds.height();
@@ -160,12 +160,52 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
                 drawShadow(canvas, viewWidth, viewHeight);
             }
         }
+
         super.dispatchDraw(canvas);
     }
 
     protected void drawShadow(@NonNull Canvas canvas, int viewWidth, int viewHeight) {
+        if (getChildCount() > 0)
+        {
+            View child = getChildAt(0);
+            Drawable background = child.getBackground();
+            if (background != null && background instanceof PlatformShadowDrawable && ((PlatformShadowDrawable)background).canDrawShadow()) {
+                background.setBounds(0, 0, viewWidth, viewHeight);
+                drawShadowViaPlatformShadowDrawable(canvas, (PlatformShadowDrawable)background, viewWidth, viewHeight);
+                return;
+            }
+
+            drawShadowViaDispatchDraw(canvas, viewWidth, viewHeight);
+        }
+    }
+
+    private void drawShadowViaPlatformShadowDrawable(@NonNull Canvas canvas, @NonNull PlatformShadowDrawable drawable, int viewWidth, int viewHeight) {
         int bitmapWidth = viewWidth + (int)(radius * 2.5);
         int bitmapHeight = viewHeight + (int)(radius * 2.5);
+            
+        // Apply shader if needed
+        Shader shader = createShader(bitmapWidth, bitmapHeight);
+        if (shader != null) {
+            shadowPaint.setShader(shader);
+        }
+
+        Path clipPath = hasClip ? getClipPath(viewWidth, viewHeight) : null;
+
+        canvas.save();
+        canvas.translate(offsetX, offsetY);
+        drawable.drawShadow(canvas, shadowPaint, clipPath);
+        canvas.restore();
+    }
+
+    private void drawShadowViaDispatchDraw(@NonNull Canvas canvas, int viewWidth, int viewHeight) {
+        int radius = (int)this.radius;
+        // Give it a minimum additional space to draw shadow
+        if (radius <= 0) {
+            radius = 1;
+        }
+
+        int bitmapWidth = viewWidth + radius * 2;
+        int bitmapHeight = viewHeight + radius * 2;
         int drawOriginX = (bitmapWidth - viewWidth) / 2;
         int drawOriginY = (bitmapHeight - viewHeight) / 2;
 
@@ -193,16 +233,16 @@ public abstract class PlatformWrapperView extends PlatformContentViewGroup {
 
             // Get the alpha bounds of bitmap
             Bitmap extractAlpha = shadowBitmap.extractAlpha();
-
+            
             // Clear the shadow canvas
             shadowCanvas.drawColor(Color.BLACK, PorterDuff.Mode.CLEAR);
-
+            
             // Apply shader if needed
             Shader shader = createShader(bitmapWidth, bitmapHeight);
             if (shader != null) {
                 shadowPaint.setShader(shader);
             }
-
+            
             shadowCanvas.drawBitmap(extractAlpha, 0, 0, shadowPaint);
 
             extractAlpha.recycle();

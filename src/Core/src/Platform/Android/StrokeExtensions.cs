@@ -35,7 +35,7 @@ namespace Microsoft.Maui.Platform
 
 			platformView.UpdateMauiDrawable(border, ref mauiDrawable);
 			// Make sure to invalidate the wrapper view so that the eventual shadow is redrawn
-			(platformView.Parent as WrapperView)?.InvalidateShadow();
+			(platformView.Parent as WrapperView)?.Invalidate();
 		}
 
 		public static void UpdateStroke(this AView platformView, IBorderStroke border)
