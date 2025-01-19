@@ -217,7 +217,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 				// We are replacing one set of items with a set of equal size; we can do a simple item range update
 
-				Update(c => c.ReloadItems(CreateIndexesFrom(startIndex, newCount)), args);
+				Update(c =>
+				{
+					c.ReloadItems(CreateIndexesFrom(startIndex, newCount));
+					c.CollectionViewLayout.InvalidateLayout();
+				}, args);
 				return;
 			}
 
