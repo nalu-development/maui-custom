@@ -188,7 +188,6 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				itemsView.AddLogicalChild(view);
 
 				UpdateSelectionColor(view);
-				MarkAsBound();
 			}
 			else
 			{
@@ -196,11 +195,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				if (oldElement != null && !ReferenceEquals(bindingContext, oldElement.BindingContext))
 				{
 					oldElement.BindingContext = bindingContext;
-					MarkAsBound();
 				}
 			}
 
 			CurrentTemplate = itemTemplate;
+			MarkAsBound();
 		}
 
 		void MarkAsBound()
