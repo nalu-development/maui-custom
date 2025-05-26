@@ -131,7 +131,7 @@ namespace Microsoft.Maui.Controls.Platform
 			return attrString;
 		}
 
-		internal static void RecalculateSpanPositions(this UILabel control, Label element)
+		internal static void RecalculateSpanPositions(this UILabel control, Label element, Size size)
 		{
 			if (element is null)
 			{
@@ -144,12 +144,12 @@ namespace Microsoft.Maui.Controls.Platform
 			}
 
 			if (element?.FormattedText?.Spans is null
-			    || element.FormattedText.Spans.Count == 0)
+				|| element.FormattedText.Spans.Count == 0)
 			{
 				return;
 			}
 
-			var finalSize = control.Bounds;
+			var finalSize = size;
 
 			if (finalSize.Width <= 0 || finalSize.Height <= 0)
 			{
@@ -207,13 +207,13 @@ namespace Microsoft.Maui.Controls.Platform
 				{
 					//Whole span is within the line and bigger than the line
 					if (lineGlyphRange.Location >= startGlyphRange.Location &&
-					    NSMaxRange(lineGlyphRange) <= endGlyphRange.Location)
+						NSMaxRange(lineGlyphRange) <= endGlyphRange.Location)
 					{
 						spanRects.Add(usedRect);
 					}
 					// Whole span is within the line and smaller than the line
 					else if (lineGlyphRange.Location <= startGlyphRange.Location &&
-					         endGlyphRange.Location <= NSMaxRange(lineGlyphRange))
+							 endGlyphRange.Location <= NSMaxRange(lineGlyphRange))
 					{
 						var spanBoundingRect = layoutManager.GetBoundingRect(
 							new(startGlyphRange.Location, endGlyphRange.Location - startGlyphRange.Location + 1),
@@ -222,7 +222,7 @@ namespace Microsoft.Maui.Controls.Platform
 					}
 					// Span starts on current line and ends on next lines
 					else if (lineGlyphRange.Location <= startGlyphRange.Location &&
-					         NSMaxRange(lineGlyphRange) <= endGlyphRange.Location)
+							 NSMaxRange(lineGlyphRange) <= endGlyphRange.Location)
 					{
 						var spanBoundingRect = layoutManager.GetBoundingRect(
 							new(startGlyphRange.Location, NSMaxRange(lineGlyphRange) - startGlyphRange.Location),
@@ -231,7 +231,7 @@ namespace Microsoft.Maui.Controls.Platform
 					}
 					// Span starts on previous lines and ends on current line
 					else if (lineGlyphRange.Location >= startGlyphRange.Location &&
-					         NSMaxRange(lineGlyphRange) >= endGlyphRange.Location)
+							 NSMaxRange(lineGlyphRange) >= endGlyphRange.Location)
 					{
 						var spanBoundingRect = layoutManager.GetBoundingRect(
 							new(lineGlyphRange.Location, endGlyphRange.Location - lineGlyphRange.Location),

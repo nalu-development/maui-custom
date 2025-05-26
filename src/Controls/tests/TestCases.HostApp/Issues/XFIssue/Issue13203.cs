@@ -1,6 +1,6 @@
 namespace Maui.Controls.Sample.Issues;
 
-[Issue(IssueTracker.Github, 13203, "[Bug] [iOS] CollectionView does not bind to items if `IsVisible=False`", PlatformAffected.iOS)]
+[Issue(IssueTracker.Github, 13203, "[Bug] [iOS] CollectionView does not bind to items if IsVisible=False", PlatformAffected.iOS)]
 public class Issue13203 : TestContentPage
 {
 	const string Success = "Success";
@@ -11,10 +11,12 @@ public class Issue13203 : TestContentPage
 		{
 			IsVisible = false,
 
+			BackgroundColor = Colors.PaleGreen,
 			ItemTemplate = new DataTemplate(() =>
 			{
-				var label = new Label();
+				var label = new Label { FontSize = 40, BackgroundColor = Colors.SeaGreen };
 				label.SetBinding(Label.TextProperty, new Binding(nameof(Item.Text)));
+				label.SetBinding(Label.AutomationIdProperty, new Binding(nameof(Item.Text)));
 				return label;
 			})
 		};

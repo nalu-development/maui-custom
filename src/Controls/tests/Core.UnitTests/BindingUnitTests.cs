@@ -1241,7 +1241,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 					proxies.Add(new WeakReference(listener));
 				}
 				Assert.NotEmpty(proxies); // Should be at least 1
-			};
+			}
+			;
 			create();
 
 			await Task.Yield();
@@ -1533,7 +1534,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		}
 
 		[Fact, Category("[Binding] Complex paths")]
-		[Description("When part of a complex path can not be evaluated during an update, bindables should return to their default value.")]
+		[Description("When part of a complex path cannot be evaluated during an update, bindables should return to their default value.")]
 		public void NullInPathUsesDefaultValue()
 		{
 			var vm = new ComplexMockViewModel
@@ -1555,7 +1556,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		}
 
 		[Fact, Category("[Binding] Complex paths")]
-		[Description("When part of a complex path can not be evaluated during an update, bindables should return to their default value.")]
+		[Description("When part of a complex path cannot be evaluated during an update, bindables should return to their default value.")]
 		public void NullContextUsesDefaultValue()
 		{
 			var vm = new ComplexMockViewModel
@@ -1600,7 +1601,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.Equal(2, vm.count);
 		}
-		
+
 		[Fact]
 		public void BindingsApplyOnlyOnceOnBindingContextInheritance()
 		{
@@ -1609,7 +1610,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			{
 				Text = "a binding context"
 			};
-			
+
 			var root = new MockBindable();
 			var bindableProperty = MockBindable.TextProperty;
 
@@ -1630,7 +1631,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.Equal("12", sb.ToString());
 		}
-		
+
 		[Fact]
 		public void BindingsApplyOnlyOnceOnParentSet()
 		{
@@ -1639,7 +1640,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			{
 				Text = "a binding context"
 			};
-			
+
 			var root = new MockBindable();
 			var bindableProperty = MockBindable.TextProperty;
 
@@ -1660,7 +1661,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.Equal("12", sb.ToString());
 		}
-		
+
 		[Fact]
 		public void BindingContextBindingsApplyOnlyOnceOnBindingContextInheritance()
 		{
@@ -1675,7 +1676,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 					}
 				}
 			};
-			
+
 			var root = new MockBindable();
 
 			var level1 = new MockBindable();
@@ -1698,7 +1699,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.Equal("132", sb.ToString());
 			Assert.Equal(bindingContext.Level1.Level2.Text, level2.GetValue(MockBindable.TextProperty));
 		}
-		
+
 		[Fact]
 		public void BindingContextBindingsApplyOnlyOnceOnParentSet()
 		{
@@ -1713,7 +1714,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 					}
 				}
 			};
-			
+
 			var root = new MockBindable();
 
 			var level1 = new MockBindable();
@@ -2496,7 +2497,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			button.BackgroundColor = Colors.Coral;
 			button.SetBinding(Button.BackgroundColorProperty, new Binding("BackgroundColor", source: this));
 		}
-		
+
 		private class IdentityLoggerConverter : IValueConverter
 		{
 			readonly StringBuilder _sb;

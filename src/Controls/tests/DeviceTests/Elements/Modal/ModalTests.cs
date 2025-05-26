@@ -187,7 +187,8 @@ namespace Microsoft.Maui.DeviceTests
 			await CreateHandlerAndAddToWindow<IWindowHandler>(window,
 				async (_) =>
 				{
-					await windowPage.Navigation.PushAsync(new ContentPage() { Title = "Second Page on PushingNavigationPageModallyWithShellShowsToolbarCorrectly" });
+					var secondPage = new ContentPage() { Title = "Second Page on PushingNavigationPageModallyWithShellShowsToolbarCorrectly" };
+					await windowPage.Navigation.PushAsync(secondPage);
 					await windowPage.Navigation.PushModalAsync(modalPage);
 
 					// Navigation Bar is visible
@@ -203,8 +204,8 @@ namespace Microsoft.Maui.DeviceTests
 					// Remove the modal page and validate the root window pages toolbar is still setup correctly
 					await modalPage.Navigation.PopModalAsync();
 
-					await AssertEventually(() => IsNavigationBarVisible(windowPage.Handler));
-					await AssertEventually(() => IsBackButtonVisible(windowPage.Handler));
+					await AssertEventually(() => IsNavigationBarVisible(secondPage.Handler));
+					await AssertEventually(() => IsBackButtonVisible(secondPage.Handler));
 				});
 		}
 
@@ -531,6 +532,51 @@ namespace Microsoft.Maui.DeviceTests
 
 			Assert.Empty(rootPage.GetCurrentPage().Navigation.ModalStack);
 		}
+
+		[Fact]
+		public async Task DismissModalIfNotAnimated()
+		{
+			SetupBuilder();
+			var page = new ContentPage();
+
+			var modalPage = new ContentPage()
+			{
+				Content = new Label() { Text = "Page with no animation" }
+			};
+
+			var window = new Window(page);
+
+			await CreateHandlerAndAddToWindow(window, async () =>
+			{
+				await page.Navigation.PushModalAsync(modalPage, false);
+				await OnLoadedAsync(modalPage);
+				await modalPage.Navigation.PopModalAsync(false);
+				await OnUnloadedAsync(modalPage);
+
+			});
+		}
+
+#if WINDOWS || MACCATALYST
+		[Fact]
+		public async Task DisappearingEventFiresWhenWindowClosedWithModal()
+		{
+			SetupBuilder();
+			var rootPage = new ContentPage();
+			var modalPage = new ContentPage();
+			bool disappearingTriggered = false;
+			modalPage.Disappearing += (_, _) => disappearingTriggered = true;
+			var window = new Window(rootPage);
+			await rootPage.Navigation.PushModalAsync(modalPage);
+
+			await CreateHandlerAndAddToWindow<IWindowHandler>(window, async handler =>
+			{
+				await OnLoadedAsync(modalPage);
+				Application.Current?.CloseWindow(window);
+			});
+
+			Assert.True(disappearingTriggered);
+		}
+#endif
 
 		class PageTypes : IEnumerable<object[]>
 		{

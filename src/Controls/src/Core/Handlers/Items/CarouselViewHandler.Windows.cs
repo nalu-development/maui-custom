@@ -23,7 +23,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 		ScrollViewer _scrollViewer;
 		WScrollBarVisibility? _horizontalScrollBarVisibilityWithoutLoop;
 		WScrollBarVisibility? _verticalScrollBarVisibilityWithoutLoop;
-		Size _currentSize; 
+		Size _currentSize;
 		bool _isCarouselViewReady;
 		NotifyCollectionChangedEventHandler _collectionChanged;
 		readonly WeakNotifyCollectionChangedProxy _proxy = new();
@@ -98,7 +98,14 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			_scrollViewer.ViewChanged += OnScrollViewChanged;
 			_scrollViewer.SizeChanged += OnScrollViewSizeChanged;
 
-			UpdateScrollBarVisibilityForLoop();
+			if (Element.Loop)
+			{
+				UpdateScrollBarVisibilityForLoop();
+			}
+			else
+			{
+				UpdateScrollBarVisibility();
+			}
 		}
 
 		protected override ICollectionView GetCollectionView(CollectionViewSource collectionViewSource)
@@ -195,7 +202,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			{
 				handler.UpdatePosition();
 			}
-			
+
 		}
 
 		public static void MapIsBounceEnabled(CarouselViewHandler handler, CarouselView carouselView)
@@ -235,11 +242,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			{
 				case ItemsLayoutOrientation.Horizontal:
 					ScrollViewer.SetHorizontalScrollMode(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollMode.Auto : WScrollMode.Disabled);
-					ScrollViewer.SetHorizontalScrollBarVisibility(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollBarVisibility.Auto : WScrollBarVisibility.Disabled);
+					ScrollViewer.SetHorizontalScrollBarVisibility(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollBarVisibility.Auto : WScrollBarVisibility.Hidden);
 					break;
 				case ItemsLayoutOrientation.Vertical:
 					ScrollViewer.SetVerticalScrollMode(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollMode.Auto : WScrollMode.Disabled);
-					ScrollViewer.SetVerticalScrollBarVisibility(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollBarVisibility.Auto : WScrollBarVisibility.Disabled);
+					ScrollViewer.SetVerticalScrollBarVisibility(ListViewBase, ItemsView.IsSwipeEnabled ? WScrollBarVisibility.Auto : WScrollBarVisibility.Hidden);
 					break;
 			}
 		}
@@ -588,9 +595,8 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			{
 				item.ItemHeight = itemHeight;
 				item.ItemWidth = itemWidth;
-
-				item.InvalidateMeasure();
 			}
+			ListViewBase.InvalidateMeasure();
 		}
 	}
 }

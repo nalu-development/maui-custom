@@ -40,6 +40,7 @@ namespace Maui.Controls.Sample
 			// Concepts & Abstracts
 			new GalleryPageFactory(() => new BorderGallery(), "Border Gallery"),
 			new GalleryPageFactory(() => new DragAndDropGallery(), "Drag and Drop Gallery"),
+			new GalleryPageFactory(() => new FontsGalleryPage(), "Fonts Gallery"),
 			new GalleryPageFactory(() => new GestureRecognizerGallery(), "Gesture Recognizer Gallery"),
 			new GalleryPageFactory(() => new InputTransparencyGalleryPage(), "Input Transparency Gallery"),
 			new GalleryPageFactory(() => new ImageLoadingGalleryPage(), "Image Loading Gallery"),
@@ -75,6 +76,8 @@ namespace Maui.Controls.Sample
 			new GalleryPageFactory(() => new SwipeViewCoreGalleryPage(), "SwipeView Gallery"),
 			new GalleryPageFactory(() => new TimePickerCoreGalleryPage(), "Time Picker Gallery"),
 			new GalleryPageFactory(() => new WebViewCoreGalleryPage(), "WebView Gallery"),
+			new GalleryPageFactory(() => new SliderControlPage(), "Slider Feature Matrix"),
+			new GalleryPageFactory(() => new CollectionViewFeaturePage(), "CollectionView Feature Matrix"),
 		};
 
 		public CorePageView(Page rootPage)
@@ -111,7 +114,6 @@ namespace Maui.Controls.Sample
 			template.SetBinding(TextCell.TextProperty, "Title");
 			template.SetBinding(TextCell.AutomationIdProperty, "TitleAutomationId");
 
-			BindingContext = _pages;
 			ItemTemplate = template;
 			ItemsSource = _pages;
 

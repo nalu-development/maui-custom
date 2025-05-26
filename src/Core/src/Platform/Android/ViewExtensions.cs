@@ -117,6 +117,8 @@ namespace Microsoft.Maui.Platform
 			if (platformView is WrapperView wrapper)
 				wrapper.Shadow = view.Shadow;
 		}
+
+		[Obsolete("IBorder is not used and will be removed in a future release.")]
 		public static void UpdateBorder(this AView platformView, IView view)
 		{
 			if (platformView is WrapperView wrapper)
@@ -784,7 +786,8 @@ namespace Microsoft.Maui.Platform
 				}
 
 				view.ShowSoftInput();
-			};
+			}
+			;
 
 			view.Post(ShowSoftInput);
 		}

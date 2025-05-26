@@ -6,7 +6,9 @@
  */
 
 using System;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using CoreGraphics;
 using Foundation;
@@ -22,7 +24,7 @@ public static class KeyboardAutoManagerScroll
 	static CGPoint StartingContentOffset;
 	static UIEdgeInsets StartingScrollIndicatorInsets;
 	static UIEdgeInsets StartingContentInsets;
-	static CGRect KeyboardFrame = CGRect.Empty;
+	internal static CGRect KeyboardFrame = CGRect.Empty;
 	static CGPoint TopViewBeginOrigin = new(nfloat.MaxValue, nfloat.MaxValue);
 	static readonly CGPoint InvalidPoint = new(nfloat.MaxValue, nfloat.MaxValue);
 	static double AnimationDuration = 0.25;
@@ -182,7 +184,7 @@ public static class KeyboardAutoManagerScroll
 	{
 		notification.UserInfo?.SetAnimationDuration();
 
-		if (LastScrollView is not null)
+		if (LastScrollView?.Window is not null)
 		{
 			UIView.Animate(AnimationDuration, 0, UIViewAnimationOptions.CurveEaseOut, AnimateHidingKeyboard, () => { });
 		}
@@ -271,8 +273,7 @@ public static class KeyboardAutoManagerScroll
 			return null;
 		}
 
-		// remove everything except for numbers and commas
-		var temp = Regex.Replace(description, @"[^0-9,]", "");
+		var temp = RemoveEverythingExceptForNumbersAndCommas(description);
 		var dimensions = temp.Split(',');
 
 		if (dimensions.Length == 4
@@ -285,6 +286,19 @@ public static class KeyboardAutoManagerScroll
 		}
 
 		return null;
+
+		static string RemoveEverythingExceptForNumbersAndCommas(string input)
+		{
+			var sb = new StringBuilder(input.Length);
+			foreach (var character in input)
+			{
+				if (char.IsDigit(character) || character == ',')
+				{
+					sb.Append(character);
+				}
+			}
+			return sb.ToString();
+		}
 	}
 
 	// Used to debounce calls from different oberservers so we can be sure
@@ -681,7 +695,7 @@ public static class KeyboardAutoManagerScroll
 			}
 			else
 			{
-				ApplyContentInset (ScrolledView, LastScrollView, true, false);
+				ApplyContentInset(ScrolledView, LastScrollView, true, false);
 				// if our View is an editor, we can adjust the ContentInset.Bottom so that the text cursor will stay above the keyboard
 				if (ScrolledView != View && View is UITextView textView)
 				{
@@ -791,7 +805,11 @@ public static class KeyboardAutoManagerScroll
 
 		var bottomScrollIndicatorInset = bottomInset;
 
-		bottomInset = nfloat.Max(StartingContentInsets.Bottom, bottomInset);
+		// When the superview is a MauiCollectionView and the scrollView is a MauiTextView, we do not want to consider the Bottom Inset
+		// reserved for the Footer.
+		bool isMauiTextViewInCV = scrolledView is UITextView && LastScrollView is UICollectionView;
+
+		bottomInset = isMauiTextViewInCV ? bottomInset : nfloat.Max(StartingContentInsets.Bottom, bottomInset);
 		bottomScrollIndicatorInset = nfloat.Max(StartingScrollIndicatorInsets.Bottom, bottomScrollIndicatorInset);
 
 		if (OperatingSystem.IsIOSVersionAtLeast(11, 0))
@@ -840,7 +858,7 @@ public static class KeyboardAutoManagerScroll
 	}
 
 	static bool IsHorizontalCollectionView(UIView collectionView)
-    => collectionView is UICollectionView { CollectionViewLayout: UICollectionViewFlowLayout { ScrollDirection: UICollectionViewScrollDirection.Horizontal }};
+	=> collectionView is UICollectionView { CollectionViewLayout: UICollectionViewFlowLayout { ScrollDirection: UICollectionViewScrollDirection.Horizontal } };
 
 	internal static nfloat FindKeyboardHeight()
 	{

@@ -15,13 +15,13 @@ namespace Microsoft.Maui.TestCases.Tests.Issues
 		[Test]
 		[Category(UITestCategories.Navigation)]
 		[Category(UITestCategories.Compatibility)]
-		[FailsOnAllPlatforms]
-		public async Task Bugzilla32615Test()
+		public void Bugzilla32615Test()
 		{
-			App.Tap("btnModal");
-			App.Tap("btnPop");
-			await Task.Delay(1000);
-			App.WaitForNoElement("1");
+			App.WaitForElement("open");
+			App.Tap("open");
+			App.WaitForElement("pop");
+			App.Tap("pop");
+			App.WaitForElement("lblCount");
 		}
 	}
 }
