@@ -30,6 +30,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		bool _initialized;
 		bool _laidOut;
+		bool _needsSupplementaryViewsLayout = true;
 		bool _isEmpty = true;
 		bool _emptyViewDisplayed;
 		bool _disposed;
@@ -198,31 +199,28 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public override void ViewWillLayoutSubviews()
 		{
-			ConstrainItemsToBounds();
-
-			var mauiCollectionView = CollectionView as MauiCollectionView;
-			var needsCellLayout = mauiCollectionView?.NeedsCellLayout is true;
-			if (needsCellLayout)
+			if (CollectionView is MauiCollectionView { NeedsCellLayout: true } mauiCollectionView)
 			{
 				InvalidateLayoutIfItemsMeasureChanged();
 				mauiCollectionView.NeedsCellLayout = false;
+				_needsSupplementaryViewsLayout = true;
 			}
 
-			base.ViewWillLayoutSubviews();
-			
-			if (needsCellLayout || // A cell changed its measure
-			    !_laidOut || // We have never laid out
-			    // With no cells, nothing will trigger a layout when bounds change,
-			    // but we still need to properly lay out supplementary views
-			    ItemsSource.ItemCount == 0)
+			if (KeyboardAutoManagerScroll.IsKeyboardAutoScrollHandling || IsRefreshing())
 			{
-				// We don't want to mess up with ContentOffset while refreshing, given that's also gonna cause
-				// a change in the content's offset Y.
-				if (!IsRefreshing())
-				{
-					MeasureSupplementaryViews();
-					LayoutSupplementaryViews();
-				}
+				base.ViewWillLayoutSubviews();
+				return;
+			}
+			
+			ConstrainItemsToBounds();
+
+			base.ViewWillLayoutSubviews();
+
+			if (!_laidOut || _needsSupplementaryViewsLayout || ItemsSource.ItemCount == 0)
+			{
+				MeasureSupplementaryViews();
+				LayoutSupplementaryViews();
+				_needsSupplementaryViewsLayout = false;
 			}
 
 			InvalidateMeasureIfContentSizeChanged();

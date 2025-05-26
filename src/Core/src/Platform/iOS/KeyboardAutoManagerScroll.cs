@@ -36,6 +36,7 @@ public static class KeyboardAutoManagerScroll
 	static NSObject? WillShowToken;
 	static NSObject? WillHideToken;
 	static NSObject? DidHideToken;
+	static NSObject? DidShowToken; // Added for UIKeyboardDidShowNotification
 	static NSObject? TextFieldToken;
 	static NSObject? TextViewToken;
 	internal static bool ShouldDisconnectLifecycle;
@@ -57,15 +58,17 @@ public static class KeyboardAutoManagerScroll
 			return;
 		}
 
-		TextFieldToken = NSNotificationCenter.DefaultCenter.AddObserver(new NSString("UITextFieldTextDidBeginEditingNotification"), DidUITextBeginEditing);
+		TextFieldToken = NSNotificationCenter.DefaultCenter.AddObserver(UITextField.TextDidBeginEditingNotification, DidUITextBeginEditing);
 
-		TextViewToken = NSNotificationCenter.DefaultCenter.AddObserver(new NSString("UITextViewTextDidBeginEditingNotification"), DidUITextBeginEditing);
+		TextViewToken = NSNotificationCenter.DefaultCenter.AddObserver(UITextView.TextDidBeginEditingNotification, DidUITextBeginEditing);
 
-		WillShowToken = NSNotificationCenter.DefaultCenter.AddObserver(new NSString("UIKeyboardWillShowNotification"), WillKeyboardShow);
+		WillShowToken = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.WillShowNotification, WillKeyboardShow);
 
-		WillHideToken = NSNotificationCenter.DefaultCenter.AddObserver(new NSString("UIKeyboardWillHideNotification"), WillHideKeyboard);
+		WillHideToken = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.WillHideNotification, WillHideKeyboard);
 
-		DidHideToken = NSNotificationCenter.DefaultCenter.AddObserver(new NSString("UIKeyboardDidHideNotification"), DidHideKeyboard);
+		DidHideToken = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.DidHideNotification, DidHideKeyboard);
+
+		DidShowToken = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.DidShowNotification, DidKeyboardShow);
 	}
 
 	/// <summary>
@@ -94,6 +97,11 @@ public static class KeyboardAutoManagerScroll
 		{
 			NSNotificationCenter.DefaultCenter.RemoveObserver(DidHideToken);
 			DidHideToken = null;
+		}
+		if (DidShowToken is not null)
+		{
+			NSNotificationCenter.DefaultCenter.RemoveObserver(DidShowToken);
+			DidShowToken = null;
 		}
 		if (TextFieldToken is not null)
 		{
@@ -208,6 +216,100 @@ public static class KeyboardAutoManagerScroll
 		IsKeyboardAutoScrollHandling = false;
 		ShouldIgnoreSafeAreaAdjustment = false;
 		ShouldScrollAgain = false;
+	}
+
+	// Handler for UIKeyboardDidShowNotification
+	static void DidKeyboardShow(NSNotification notification)
+	{
+		// Guard conditions
+		if (!IsKeyboardAutoScrollHandling || View is null || ContainerView is null || LastScrollView is null)
+		{
+			return;
+		}
+
+		// Recalculate boundaries
+		var window = ContainerView.Window;
+		if (window is null)
+		{
+			return;
+		}
+
+		var intersectRect = CGRect.Intersect(KeyboardFrame, window.Frame);
+		var kbSize = intersectRect == CGRect.Empty ? new CGSize(KeyboardFrame.Width, 0) : intersectRect.Size;
+
+		nfloat statusBarHeight;
+		nfloat navigationBarAreaHeight;
+
+		if (View.FindResponder<UINavigationController>() is UINavigationController navigationController)
+		{
+			navigationBarAreaHeight = navigationController.NavigationBar.Frame.GetMaxY();
+		}
+		else
+		{
+			if (OperatingSystem.IsIOSVersionAtLeast(13, 0))
+			{
+				statusBarHeight = window.WindowScene?.StatusBarManager?.StatusBarFrame.Height ?? 0;
+			}
+			else
+			{
+				statusBarHeight = UIApplication.SharedApplication.StatusBarFrame.Height;
+			}
+
+			navigationBarAreaHeight = statusBarHeight;
+		}
+
+		var topLayoutGuide = Math.Max(navigationBarAreaHeight, ContainerView.LayoutMargins.Top);
+		var keyboardYPosition = window.Frame.Height - kbSize.Height - TextViewDistanceFromBottom;
+		var bottomBoundary = (double)keyboardYPosition;
+
+		// Get current cursor position
+		var cursorRect = FindCursorPosition();
+
+		if (cursorRect is null)
+		{
+			return;
+		}
+
+		var currentCursorRect = (CGRect)cursorRect;
+
+		// Check for misalignment and apply corrective scroll
+		var currentScrollOffset = LastScrollView.ContentOffset;
+		var newScrollOffsetY = currentScrollOffset.Y;
+		var needsCorrection = false;
+
+		// Check if cursor is below the bottom boundary
+		if (currentCursorRect.Bottom > bottomBoundary)
+		{
+			var deltaY = currentCursorRect.Bottom - (nfloat)bottomBoundary;
+			newScrollOffsetY = currentScrollOffset.Y + deltaY;
+			needsCorrection = true;
+		}
+		// Check if cursor is above the top boundary
+		else if (currentCursorRect.Y < topLayoutGuide)
+		{
+			var deltaY = currentCursorRect.Y - (nfloat)topLayoutGuide;
+			newScrollOffsetY = currentScrollOffset.Y + deltaY;
+			needsCorrection = true;
+		}
+
+		if (!needsCorrection)
+		{
+			return;
+		}
+
+		// Ensure new offset is within valid bounds
+		newScrollOffsetY = (nfloat)Math.Max(newScrollOffsetY, -LastScrollView.ContentInset.Top);
+		var maxScrollY = LastScrollView.ContentSize.Height - LastScrollView.Bounds.Height + LastScrollView.ContentInset.Bottom;
+		newScrollOffsetY = (nfloat)Math.Min(newScrollOffsetY, maxScrollY);
+
+		// Apply the correction with animation
+		if (Math.Abs(currentScrollOffset.Y - newScrollOffsetY) > 0.1) // Check if change is meaningful
+		{
+			UIView.Animate(0.03, 0, UIViewAnimationOptions.CurveEaseOut, () =>
+			{
+				LastScrollView.SetContentOffset(new CGPoint(currentScrollOffset.X, newScrollOffsetY), animated: false);
+			}, () => { });
+		}
 	}
 
 	static NSObject? FindValue(this NSDictionary dict, string key)
