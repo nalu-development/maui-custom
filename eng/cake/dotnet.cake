@@ -10,6 +10,7 @@ var vsVersion = GetBuildVariable("VS", "");
 string MSBuildExe = Argument("msbuild", EnvironmentVariable("MSBUILD_EXE", ""));
 string nugetSource = Argument("nugetsource", "");
 string officialBuildId = Argument("officialbuildid", "");
+string packageVersion = Argument("packageVersion", "");
 
 string testFilter = Argument("test-filter", EnvironmentVariable("TEST_FILTER"));
 
@@ -295,10 +296,15 @@ Task("dotnet-pack-maui")
             officialBuildId = DateTime.UtcNow.ToString("yyyyMMdd.1");
         }
 
+        if(string.IsNullOrEmpty(packageVersion))
+        {
+            packageVersion = "8.0.99-dev";
+        }
+
         RunMSBuildWithDotNet(sln, target: "Pack", properties: new Dictionary<string, string>
         {
             { "SymbolPackageFormat", "snupkg" },
-            { "OfficialBuildId", officialBuildId },
+            { "PackageVersion", packageVersion + "." + officialBuildId },
         });
     });
 
