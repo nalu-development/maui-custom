@@ -33,6 +33,8 @@ jobs:
                   sed -i '' 's@NUGET_ONLY_PLACEHOLDER@https://api.nuget.org/v3/index.json@g' NuGet.config
                   # Pin the SDK so the runner's newer preinstalled SDK isn't picked up.
                   jq '.sdk.version = "10.0.302" | .sdk.rollForward = "disable"' global.json > global.json.tmp && mv global.json.tmp global.json
+                  # Version packages as e.g. 10.0.110-nalu.90 so they don't clash with Microsoft's stable ones.
+                  echo "-p:VersionSuffix=nalu.${{github.run_number}}" > Directory.Build.rsp
             - name: "Setup .NET"
               uses: actions/setup-dotnet@v4
               with:
